@@ -20,5 +20,10 @@
             android:id="@+id/nav_datastore"
             android:icon="@drawable/ic_menu_camera"
             android:title="@string/menu_datastore" />
+        <item
+            android:id="@+id/nva_mylocaiton"
+            android:icon="@drawable/ic_menu_camera"
+            android:title="@string/menu_mylocaiton" />
+
     </group>
 </menu>
