@@ -25,5 +25,10 @@
             android:icon="@drawable/ic_menu_camera"
             android:title="@string/menu_mylocaiton" />
 
+        <item
+            android:id="@+id/nav_maps"
+            android:icon="@drawable/ic_menu_camera"
+            android:title="@string/menu_map" />
+
     </group>
 </menu>

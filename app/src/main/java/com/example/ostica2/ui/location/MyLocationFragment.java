@@ -1,6 +1,9 @@
 package com.example.ostica2.ui.location;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.Intent;
+import android.content.IntentSender;
 import android.location.Location;
 import android.os.Bundle;
 
@@ -9,6 +12,7 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,12 +22,31 @@ import android.widget.Toast;
 import com.example.ostica2.R;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.CommonStatusCodes;
+import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResponse;
+import com.google.android.gms.location.LocationSettingsStates;
+import com.google.android.gms.location.LocationSettingsStatusCodes;
+import com.google.android.gms.location.SettingsClient;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
+import static android.content.ContentValues.TAG;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 /**
@@ -31,7 +54,7 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
  * Use the {@link MyLocationFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class MyLocationFragment extends Fragment {
+public class MyLocationFragment extends Fragment implements OnMapReadyCallback {
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -47,6 +70,27 @@ public class MyLocationFragment extends Fragment {
     private TextView mTextView;
 
     private static final int LOCATION_PERMISSION_REQUEST = 1;
+
+    private LocationRequest mLocationRequest;
+
+    public static final String TAG = "MyLocaiton";
+    private static final int REQUEST_CHECK_SETTINGS = 2;
+    private GoogleMap mMap;
+    LocationCallback mLocationCallback= new LocationCallback(){
+        @Override
+        public void onLocationResult(LocationResult locationResult) {
+            Location location=locationResult.getLastLocation();
+            if(location!=null){
+                updateTextView(location);
+            }
+
+            if (mMap != null) {
+                LatLng latLng = new LatLng(location.getLatitude(),
+                        location.getLongitude());
+                mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
+            }
+            }
+    };
 
     public MyLocationFragment() {
         // Required empty public constructor
@@ -100,6 +144,62 @@ public class MyLocationFragment extends Fragment {
                 Toast.makeText(getContext(), ERROR_MSG, Toast.LENGTH_LONG).show();
             }
         }
+
+        mLocationRequest = new LocationRequest()
+                .setInterval(5000)
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+
+        // Obtain the SupportMapFragment and request the Google Map object.
+        SupportMapFragment mapFragment =
+                (SupportMapFragment)getChildFragmentManager().findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+
+
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        final LocationSettingsStates states =
+                LocationSettingsStates.fromIntent(data);
+        if (requestCode == REQUEST_CHECK_SETTINGS) {
+            switch (resultCode) {
+                case Activity.RESULT_OK:
+                    // Requested changes made, request location updates.
+                    requestLocationUpdates();
+                    break;
+                case Activity.RESULT_CANCELED:
+                    // Requested changes were NOT made.
+                    Log.d(TAG, "Requested settings changes declined by user.");
+                    // Check if any location services are available, and if so
+                    // request location updates.
+                    if (states.isLocationUsable())
+                        requestLocationUpdates();
+                    else
+                        Log.d(TAG, "No location services available.");
+                    break;
+                default: break;
+            }
+        }
+
+
+    }
+
+    private void requestLocationUpdates() {
+        if (ActivityCompat
+                .checkSelfPermission(getContext(), ACCESS_FINE_LOCATION)
+                ==PERMISSION_GRANTED ||
+                ActivityCompat
+                        .checkSelfPermission(getContext(), ACCESS_COARSE_LOCATION)
+                        ==PERMISSION_GRANTED) {
+            FusedLocationProviderClient fusedLocationClient
+                    = LocationServices.getFusedLocationProviderClient(getContext());
+
+
+            fusedLocationClient.requestLocationUpdates(mLocationRequest,
+                    mLocationCallback, null);
+        }
     }
 
     @Override
@@ -119,7 +219,58 @@ public class MyLocationFragment extends Fragment {
                     LOCATION_PERMISSION_REQUEST);
         }
 
+        LocationSettingsRequest.Builder builder =
+                new LocationSettingsRequest.Builder()
+                        .addLocationRequest(mLocationRequest);
+        SettingsClient client = LocationServices.getSettingsClient(getContext());
+        Task<LocationSettingsResponse> task =
+                client.checkLocationSettings(builder.build());
+
+        task.addOnSuccessListener(getActivity(),
+                new OnSuccessListener<LocationSettingsResponse>() {
+                    @Override
+                    public void onSuccess(LocationSettingsResponse
+                                                  locationSettingsResponse) {
+                        // Location settings satisfy the requirements of the Location
+                        // Request.
+                        // Request location updates.
+                        requestLocationUpdates();
+                    }
+                });
+        task.addOnFailureListener(getActivity(), new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                // Extract the status code for the failure from within the
+                // Exception.
+                int statusCode = ((ApiException) e).getStatusCode();
+                switch (statusCode) {
+                    case CommonStatusCodes.RESOLUTION_REQUIRED:
+                        try {
+                            // Display a user dialog to resolve the location settings
+                            // issue.
+                            ResolvableApiException resolvable
+                                    = (ResolvableApiException) e;
+                            resolvable.startResolutionForResult(getActivity(),
+                                    REQUEST_CHECK_SETTINGS);
+                        } catch (IntentSender.SendIntentException sendEx) {
+                            Log.e(TAG, "Location Settings resolution failed.", sendEx);
+                        }
+                        break;
+                    case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                        // Location settings issues can't be resolved by user.
+                        // Request location updates anyway.
+                        Log.d(TAG, "Location Settings can't be resolved.");
+                        requestLocationUpdates();
+                        break;
+                }
+            }
+        });
+
+
+
+
     }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -167,5 +318,12 @@ public class MyLocationFragment extends Fragment {
         mTextView.setText(latLongString);
     }
 
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
 
+        mMap = googleMap;
+        mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+        mMap.animateCamera(CameraUpdateFactory.zoomTo(17));
+
+    }
 }

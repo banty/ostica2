@@ -32,4 +32,9 @@
         android:name="com.example.ostica2.ui.location.MyLocationFragment"
         android:label="fragment_my_location"
         tools:layout="@layout/fragment_my_location" />
+    <fragment
+        android:id="@+id/nav_maps"
+        android:name="com.example.ostica2.MapsFragment"
+        android:label="fragment_maps"
+        tools:layout="@layout/fragment_maps" />
 </navigation>
