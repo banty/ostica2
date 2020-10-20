@@ -37,4 +37,14 @@
         android:name="com.example.ostica2.MapsFragment"
         android:label="fragment_maps"
         tools:layout="@layout/fragment_maps" />
+    <fragment
+        android:id="@+id/nav_person"
+        android:name="com.example.ostica2.PersonFragment"
+        android:label="fragment_person"
+        tools:layout="@layout/fragment_person" />
+    <fragment
+        android:id="@+id/nav_person_list"
+        android:name="com.example.ostica2.PersonFragment2"
+        android:label="fragment_item_list"
+        tools:layout="@layout/fragment_item_list" />
 </navigation>

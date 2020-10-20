@@ -29,6 +29,16 @@
             android:id="@+id/nav_maps"
             android:icon="@drawable/ic_menu_camera"
             android:title="@string/menu_map" />
+        <item
+            android:id="@+id/nav_person"
+            android:title="@string/nav_person"
+            android:icon="@mipmap/ic_launcher" />
+        <item
+            android:id="@+id/nav_person_list"
+            android:title="@string/nav_person_list"
+            android:icon="@mipmap/ic_launcher" />
+
+
 
     </group>
 </menu>

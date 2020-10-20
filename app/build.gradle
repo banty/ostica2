@@ -23,6 +23,9 @@ android {
 }
 
 dependencies {
+    implementation 'androidx.recyclerview:recyclerview:1.1.0'
+    def room_version = "2.2.3"
+
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
@@ -52,6 +55,12 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso' +
             ':espresso-core:3.0.2'
     implementation 'com.google.android.gms:play-services-maps:15.0.1'
+
+    implementation "androidx.room:room-runtime:$room_version"
+    implementation "androidx.room:room-rxjava2:$room_version"
+
+    annotationProcessor 'android.arch.persistence.room:compiler:1.0.0'
+
 
 
 }
